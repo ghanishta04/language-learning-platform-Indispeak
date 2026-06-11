@@ -7,6 +7,7 @@ Core features
 
 Interactive lessons (vocabulary/content loaded per language + per-lesson pages).
 Quiz system (multiple choice, scoring, user quiz history).
+
 Progress tracking
 Completed lessons tracking
 Lesson score saving
