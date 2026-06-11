@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Indispeak - Language Learning Platform{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #cce6ff 0%, #f0f9ff 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        nav .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        nav a, nav form {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        nav button {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        nav button:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .dark-mode {
+            background: #1a1a1a !important;
+            color: #f0f0f0 !important;
+        }
+
+        .dark-mode body {
+            background: #1a1a1a !important;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav>
+        <div class="nav-container">
+            <div class="logo">🌍 Indispeak</div>
+            <div>
+                <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('main.my_courses') }}">My Courses</a>
+                <a href="{{ url_for('profile.user_profile') }}">Profile</a>
+                <a href="{{ url_for('quizzes.quizzes') }}">Quizzes</a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline;">
+                    <button type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Dark mode toggle
+        if (localStorage.getItem('indispeakMode') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Language to locale code mapping
+        const languageMap = {
+            'English': 'en-US',
+            'Hindi': 'hi-IN',
+            'Marathi': 'mr-IN',
+            'Malayalam': 'ml-IN',
+            'Gujarati': 'gu-IN',
+            'Telugu': 'te-IN',
+            'Kannada': 'kn-IN',
+            'Tamil': 'ta-IN',
+            'Odia': 'or-IN',
+            'Assamese': 'as-IN',
+            'Bengali': 'bn-IN',
+            'Konkani': 'mr-IN',
+            'Rajasthani': 'hi-IN',
+            'Manipuri': 'as-IN'
+        };
+
+        function getSpeechVoice(locale) {
+            const voices = speechSynthesis.getVoices();
+            return voices.find(voice => voice.lang === locale)
+                || voices.find(voice => voice.lang && voice.lang.startsWith(locale.split('-')[0]))
+                || voices.find(voice => voice.default)
+                || voices[0]
+                || null;
+        }
+
+        // Speak function with language support
+        function speak(text, courseName, options = {}) {
+            if (!('speechSynthesis' in window)) {
+                alert('Speech synthesis is not supported in your browser. Please use Chrome, Edge, or Safari.');
+                return;
+            }
+
+            const cleanText = String(text || '').trim();
+            if (!cleanText) {
+                return;
+            }
+
+            const requestedLocale = languageMap[courseName] || 'en-US';
+            let hasSpoken = false;
+
+            const say = () => {
+                if (hasSpoken) {
+                    return;
+                }
+                hasSpoken = true;
+
+                const voice = getSpeechVoice(requestedLocale);
+                const msg = new SpeechSynthesisUtterance(cleanText);
+                msg.lang = requestedLocale;
+                msg.rate = options.rate || 0.9;
+                msg.pitch = options.pitch || 1.0;
+                msg.onstart = options.onstart || null;
+                msg.onend = options.onend || null;
+
+                if (voice) {
+                    msg.voice = voice;
+                    msg.lang = voice.lang || requestedLocale;
+                }
+
+                msg.onerror = (event) => {
+                    if (options.onerror) {
+                        options.onerror(event);
+                    }
+
+                    if (voice) {
+                        const fallbackMsg = new SpeechSynthesisUtterance(cleanText);
+                        fallbackMsg.lang = requestedLocale;
+                        fallbackMsg.rate = options.rate || 0.9;
+                        fallbackMsg.pitch = options.pitch || 1.0;
+                        fallbackMsg.onstart = options.onstart || null;
+                        fallbackMsg.onend = options.onend || null;
+                        fallbackMsg.onerror = options.onerror || null;
+
+                        speechSynthesis.cancel();
+                        setTimeout(() => speechSynthesis.speak(fallbackMsg), 75);
+                    }
+                };
+
+                speechSynthesis.cancel();
+                setTimeout(() => speechSynthesis.speak(msg), 75);
+            };
+
+            if (speechSynthesis.getVoices().length) {
+                say();
+            } else {
+                speechSynthesis.addEventListener('voiceschanged', say, { once: true });
+                setTimeout(say, 500);
+            }
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Quiz - Indispeak{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .quiz-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .question-container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .progress-bar {
+        background: #eee;
+        height: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s;
+    }
+
+    .question-text {
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .option {
+        background: #f9f9f9;
+        border: 2px solid #ddd;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .option:hover {
+        background: #f0f0f0;
+        border-color: #667eea;
+    }
+
+    .option input {
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+    .option label {
+        cursor: pointer;
+        display: block;
+    }
+
+    .option.selected {
+        background: #e7f3ff;
+        border-color: #667eea;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        transition: 0.3s;
+        width: 100%;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .question-counter {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h1>{{ quiz.title }}</h1>
+        <p>{{ quiz.description }}</p>
+    </div>
+
+    <form id="quizForm">
+        <div id="quizContent"></div>
+        <button type="submit" class="btn-submit">Submit Quiz</button>
+    </form>
+</div>
+
+<script>
+const quizId = parseInt("{{ quiz.id }}");
+let currentQuestion = 0;
+let answers = {};
+let questions = [];
+
+async function loadQuiz() {
+    try {
+        const response = await fetch(`/api/quiz/${quizId}/questions`);
+        const data = await response.json();
+        
+        if (data.success) {
+            questions = data.questions;
+            renderQuestion();
+        }
+    } catch (error) {
+        console.error('Error loading quiz:', error);
+    }
+}
+
+function renderQuestion() {
+    const container = document.getElementById('quizContent');
+    container.innerHTML = '';
+    
+    if (currentQuestion < questions.length) {
+        const question = questions[currentQuestion];
+        const progress = (currentQuestion / questions.length) * 100;
+        
+        let html = `
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+            </div>
+            <div class="question-counter">Question ${currentQuestion + 1} of ${questions.length}</div>
+            <div class="question-text">${question.text}</div>
+        `;
+        
+        Object.entries(question.options).forEach(([key, value]) => {
+            const checked = answers[question.id] === key ? 'checked' : '';
+            html += `
+                <div class="option ${checked ? 'selected' : ''}">
+                    <label>
+                        <input type="radio" name="q${question.id}" value="${key}" ${checked}
+                               onchange="selectAnswer(${question.id}, '${key}')">
+                        <strong>${key}.</strong> ${value}
+                    </label>
+                </div>
+            `;
+        });
+        
+        html += `<div style="margin-top: 20px; display: flex; gap: 10px;">`;
+        if (currentQuestion > 0) {
+            html += `<button type="button" class="btn-submit" style="width: 50%; background: #999;" onclick="previousQuestion()">← Previous</button>`;
+        } else {
+            html += `<div style="width: 50%;"></div>`;
+        }
+        html += `<button type="button" class="btn-submit" style="width: 50%;" onclick="nextQuestion()">Next →</button></div>`;
+        
+        container.innerHTML = html;
+    }
+}
+
+function selectAnswer(questionId, answer) {
+    answers[questionId] = answer;
+    const options = document.querySelectorAll(`.option`);
+    options.forEach(opt => opt.classList.remove('selected'));
+    event.target.closest('.option').classList.add('selected');
+}
+
+function nextQuestion() {
+    if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+        window.scrollTo(0, 0);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestion > 0) {
+        currentQuestion--;
+        renderQuestion();
+        window.scrollTo(0, 0);
+    }
+}
+
+document.getElementById('quizForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    try {
+        const response = await fetch('/api/submit-quiz', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                quiz_id: quizId,
+                answers: answers
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Quiz submitted! You scored ${data.score}/${data.total} (${data.percentage}%)`);
+            confetti({ particleCount: 100, spread: 70 });
+            window.location.href = '/quizzes';
+        }
+    } catch (error) {
+        console.error('Error submitting quiz:', error);
+        alert('Error submitting quiz');
+    }
+});
+
+window.addEventListener('load', loadQuiz);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+{% endblock %}

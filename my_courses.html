@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}My Courses - Indispeak{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .course-item {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .course-item h3 {
+        margin: 0 0 15px 0;
+        color: #333;
+    }
+
+    .progress-bar-container {
+        background: #eee;
+        height: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s;
+    }
+
+    .course-info {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 15px;
+    }
+
+    .btn-continue {
+        display: inline-block;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: 0.3s;
+    }
+
+    .btn-continue:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .completed-badge {
+        display: inline-block;
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>📘 My Courses</h1>
+<p>Continue learning and improve your language skills</p>
+
+<div class="course-list">
+    {% for course in courses %}
+    <div class="course-item">
+        <h3>{{ course.emoji }} {{ course.name }}</h3>
+        
+        <div class="progress-bar-container">
+            <div class="progress-fill" data-progress="{{ course.progress }}"></div>
+        </div>
+        
+        <div class="course-info">
+            {{ course.progress }} lessons completed
+            {% if course.completed %}
+                <span class="completed-badge">✓ Completed</span>
+            {% endif %}
+        </div>
+        
+        <a href="{{ url_for('main.lessons', course_name=course.name) }}" class="btn-continue">
+            {% if course.completed %}
+                Continue Learning
+            {% else %}
+                Start Learning
+            {% endif %}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.progress-fill').forEach(el => {
+        const progress = parseInt(el.getAttribute('data-progress'));
+        el.style.width = (progress * 10) + '%';
+    });
+</script>
+{% endblock %}

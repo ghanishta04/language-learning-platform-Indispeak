@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+
+{% block title %}Voice Chatbot - Practice Languages{% endblock %}
+
+{% block extra_css %}
+<style>
+    .voice-chatbot {
+        max-width: 920px;
+        margin: 0 auto;
+    }
+
+    .voice-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .voice-header h1 {
+        margin-bottom: 6px;
+        color: #4b57c5;
+    }
+
+    .panel {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        padding: 18px;
+        margin-bottom: 16px;
+    }
+
+    .top-controls {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .control {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .control label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #555;
+    }
+
+    .control select {
+        min-width: 200px;
+        padding: 10px 12px;
+        border: 2px solid #d7d7d7;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fff;
+    }
+
+    .status-chip {
+        margin-left: auto;
+        padding: 7px 12px;
+        border-radius: 16px;
+        font-size: 13px;
+        background: #eceff3;
+        color: #555;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .status-chip.listening {
+        background: #fbe3e7;
+        color: #b42336;
+    }
+
+    .status-chip.processing {
+        background: #e6eefc;
+        color: #2f5dcc;
+    }
+
+    .voice-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        color: #fff;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 12px 18px;
+    }
+
+    .btn-mic {
+        background: #169c49;
+    }
+
+    .btn-mic.listening {
+        background: #cc2b44;
+    }
+
+    .btn-speak {
+        background: #5d6ee5;
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .transcript-box {
+        margin-top: 14px;
+        padding: 12px;
+        border: 2px solid #e4e4e4;
+        border-radius: 10px;
+        background: #fafafa;
+        min-height: 48px;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .transcript-box.error {
+        border-color: #f3a7b5;
+        background: #fff3f5;
+        color: #9f1d35;
+    }
+
+    .chat-box {
+        height: 420px;
+        overflow-y: auto;
+        background: #f7f8fb;
+        border-radius: 10px;
+        padding: 16px;
+    }
+
+    .message {
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message.user {
+        align-items: flex-end;
+    }
+
+    .message.bot {
+        align-items: flex-start;
+    }
+
+    .bubble {
+        max-width: 80%;
+        border-radius: 14px;
+        padding: 10px 14px;
+        line-height: 1.4;
+    }
+
+    .message.user .bubble {
+        background: #e3e8f5;
+        color: #1e2537;
+    }
+
+    .message.bot .bubble {
+        background: #5d6ee5;
+        color: #fff;
+    }
+
+    .translation {
+        font-size: 12px;
+        color: #7f7f7f;
+        margin-top: 4px;
+    }
+
+    .time {
+        font-size: 11px;
+        color: #9b9b9b;
+        margin-top: 4px;
+    }
+
+    .hint {
+        color: #5b6475;
+        font-size: 13px;
+    }
+
+    .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #46506a;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="voice-chatbot">
+    <div class="voice-header">
+        <h1>Voice-Only Language Chatbot</h1>
+        <p>Speak in your selected language. Typing is disabled.</p>
+    </div>
+
+    <div class="panel top-controls">
+        <div class="control">
+            <label for="language-select">Select Language</label>
+            <select id="language-select">
+                {% for lang in languages %}
+                <option value="{{ lang }}" {% if lang == 'Hindi' %}selected{% endif %}>{{ lang }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="status-chip idle" id="status-chip">
+            <span class="status-dot"></span>
+            <span id="status-text">Ready</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="voice-controls">
+            <button id="mic-btn" class="btn btn-mic" type="button">🐰🎤 Tap to Speak</button>
+            <button id="speak-btn" class="btn btn-speak" type="button">Speak Last Response</button>
+            <label class="toggle" for="auto-speak">
+                <input id="auto-speak" type="checkbox">
+                Auto-speak bot response
+            </label>
+        </div>
+        <div class="transcript-box" id="transcript-box">Your spoken text will appear here.</div>
+        <p class="hint">Click Start Listening, speak one sentence, pause, and the bot will reply automatically.</p>
+    </div>
+
+    <div class="panel">
+        <div class="chat-box" id="chat-box">
+            <div class="message bot">
+                <div class="bubble">Welcome. Choose a language and start speaking.</div>
+                <div class="time">Now</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chatbotLanguageMap = {
+        'Hindi': 'hi-IN',
+        'Bengali': 'bn-IN',
+        'Marathi': 'mr-IN',
+        'Gujarati': 'gu-IN',
+        'Telugu': 'te-IN',
+        'Malayalam': 'ml-IN',
+        'Tamil': 'ta-IN',
+        'Kannada': 'kn-IN',
+        'Odia': 'or-IN',
+        'Assamese': 'as-IN',
+        'Konkani': 'mr-IN',
+        'Rajasthani': 'hi-IN',
+        'Manipuri': 'as-IN',
+        'English': 'en-US'
+    };
+
+    let recognition = null;
+    let isListening = false;
+    let isSending = false;
+    let keepListening = false;
+    let lastBotMessage = '';
+    let currentLanguage = 'Hindi';
+
+    const browserAlert = window.alert.bind(window);
+    window.alert = function (message) {
+        const text = String(message || '');
+        if (text.toLowerCase().includes('speech recognition network error')) {
+            showTranscriptMessage(
+                'Browser speech recognition is unavailable right now. Check your internet and microphone permission, then try again.',
+                true
+            );
+            setStatus('idle', 'Speech recognition unavailable');
+            return;
+        }
+        browserAlert(message);
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const languageSelect = document.getElementById('language-select');
+        const micBtn = document.getElementById('mic-btn');
+        const speakBtn = document.getElementById('speak-btn');
+        const autoSpeak = document.getElementById('auto-speak');
+
+        autoSpeak.checked = localStorage.getItem('autoSpeak') !== 'false';
+
+        languageSelect.addEventListener('change', function () {
+            currentLanguage = languageSelect.value;
+            if (recognition) {
+                recognition.lang = chatbotLanguageMap[currentLanguage] || 'en-US';
+            }
+            setStatus('idle', 'Language: ' + currentLanguage);
+        });
+
+        micBtn.addEventListener('click', toggleListening);
+        speakBtn.addEventListener('click', speakLastMessage);
+
+        autoSpeak.addEventListener('change', function () {
+            localStorage.setItem('autoSpeak', autoSpeak.checked ? 'true' : 'false');
+        });
+
+        initializeSpeechRecognition();
+    });
+
+    function initializeSpeechRecognition() {
+        const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionClass) {
+            disableVoice('Voice input is not supported in this browser. Use Chrome or Edge.');
+            return;
+        }
+
+        recognition = new SpeechRecognitionClass();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.lang = chatbotLanguageMap[currentLanguage] || 'en-US';
+
+        recognition.onresult = function (event) {
+            for (let i = event.resultIndex; i < event.results.length; i += 1) {
+                if (!event.results[i].isFinal) continue;
+                const transcript = (event.results[i][0] && event.results[i][0].transcript) || '';
+                const cleanText = transcript.trim();
+                if (!cleanText) continue;
+                keepListening = false;
+                showTranscriptMessage(cleanText);
+                sendVoiceMessage(cleanText);
+            }
+        };
+
+        recognition.onerror = function (event) {
+            const msg = mapSpeechError(event.error);
+            keepListening = false;
+            setStatus('idle', msg);
+            showTranscriptMessage(msg, true);
+            stopListeningUI();
+        };
+
+        recognition.onend = function () {
+            if (keepListening) {
+                try {
+                    if (!isListening) {
+                        return;
+                    }
+                    recognition.start();
+                    setStatus('listening', 'Listening...');
+                    return;
+                } catch (err) {
+                    keepListening = false;
+                }
+            }
+            stopListeningUI();
+        };
+    }
+
+    function toggleListening() {
+        if (!recognition) {
+            disableVoice('Voice input is unavailable.');
+            return;
+        }
+        if (isListening) {
+            keepListening = false;
+            recognition.stop();
+            stopListeningUI();
+            return;
+        }
+        startListening();
+    }
+
+    function startListening() {
+        if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            showTranscriptMessage('Voice input needs HTTPS or localhost.', true);
+            return;
+        }
+
+        try {
+            recognition.lang = chatbotLanguageMap[currentLanguage] || 'en-US';
+            keepListening = true;
+            recognition.start();
+            isListening = true;
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.add('listening');
+            micBtn.textContent = 'Stop Speaking';
+            setStatus('listening', 'Listening...');
+        } catch (err) {
+            keepListening = false;
+            setStatus('idle', 'Mic start failed');
+            showTranscriptMessage('Could not start microphone. Check browser mic permission.', true);
+            stopListeningUI();
+        }
+    }
+
+    function stopListeningUI() {
+        isListening = false;
+        keepListening = false;
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.classList.remove('listening');
+        micBtn.textContent = '🐰🎤 Tap to Speak';
+        if (!isSending) {
+            setStatus('idle', 'Ready');
+        }
+    }
+
+    function disableVoice(message) {
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.disabled = true;
+        micBtn.textContent = 'Voice Unavailable';
+        setStatus('idle', 'Unavailable');
+        showTranscriptMessage(message, true);
+    }
+
+    function mapSpeechError(errorCode) {
+        const errors = {
+            'no-speech': 'No speech detected. Try again.',
+            'audio-capture': 'No microphone found.',
+            'not-allowed': 'Microphone permission denied.',
+            'service-not-allowed': 'Speech service not allowed.',
+            'network': 'Browser speech recognition is unavailable right now. Check your internet and microphone permission, then try again.',
+            'aborted': 'Listening stopped.'
+        };
+        return errors[errorCode] || ('Speech error: ' + errorCode);
+    }
+
+    function showTranscriptMessage(message, isError = false) {
+        const transcriptBox = document.getElementById('transcript-box');
+        transcriptBox.textContent = message;
+        transcriptBox.classList.toggle('error', isError);
+    }
+
+    async function sendVoiceMessage(message) {
+        if (!message || isSending) return;
+
+        isSending = true;
+        setStatus('processing', 'Thinking...');
+        addMessage(message, 'user');
+        addTypingIndicator();
+
+        try {
+            const response = await fetch('/chatbot/api/chat', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: message,
+                    language: currentLanguage
+                })
+            });
+
+            const data = await response.json();
+            removeTypingIndicator();
+
+            if (!response.ok || !data.success) {
+                addMessage('I could not process that voice message. Please try again.', 'bot');
+                setStatus('idle', 'Ready');
+                isSending = false;
+                return;
+            }
+
+            lastBotMessage = data.response || '';
+            addMessage(data.response, 'bot', data.translation || '');
+
+            if (lastBotMessage && document.getElementById('auto-speak').checked) {
+                speakText(lastBotMessage);
+            } else {
+                setStatus('idle', 'Ready');
+            }
+        } catch (err) {
+            removeTypingIndicator();
+            addMessage('Network issue while processing voice message.', 'bot');
+            setStatus('idle', 'Ready');
+        }
+
+        isSending = false;
+    }
+
+    function addMessage(text, sender, translation) {
+        const chatBox = document.getElementById('chat-box');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message ' + sender;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = text;
+        wrapper.appendChild(bubble);
+
+        if (translation) {
+            const trans = document.createElement('div');
+            trans.className = 'translation';
+            trans.textContent = translation;
+            wrapper.appendChild(trans);
+        }
+
+        const time = document.createElement('div');
+        time.className = 'time';
+        time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        wrapper.appendChild(time);
+
+        chatBox.appendChild(wrapper);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+        const chatBox = document.getElementById('chat-box');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message bot';
+        wrapper.id = 'typing-indicator';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = '...';
+        wrapper.appendChild(bubble);
+
+        chatBox.appendChild(wrapper);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.remove();
+    }
+
+    function speakLastMessage() {
+        if (!lastBotMessage) {
+            alert('No bot response yet.');
+            return;
+        }
+        speakText(lastBotMessage);
+    }
+
+    function speakText(text) {
+        if (!('speechSynthesis' in window)) {
+            alert('Speech output is not supported in this browser.');
+            return;
+        }
+
+        const speechText = getSpeechText(text);
+        if (!speechText) {
+            setStatus('idle', 'Ready');
+            return;
+        }
+
+        const speakNow = () => {
+            const speechLocale = getSpeechLocale(speechText);
+            const voice = getChatbotVoice(speechLocale);
+            speakUtterance(speechText, speechLocale, voice, true);
+        };
+
+        if (speechSynthesis.getVoices().length) {
+            speakNow();
+            return;
+        }
+
+        let didSpeak = false;
+        const speakOnce = () => {
+            if (didSpeak) {
+                return;
+            }
+            didSpeak = true;
+            speakNow();
+        };
+
+        speechSynthesis.addEventListener('voiceschanged', speakOnce, { once: true });
+        setTimeout(speakOnce, 600);
+    }
+
+    function getSpeechText(text) {
+        const raw = (text || '').trim();
+        if (!raw) return raw;
+        if (currentLanguage === 'English') return raw;
+
+        // Remove inline English translations in parentheses.
+        const withoutParen = raw.replace(/\([^)]*\)/g, '').trim();
+        // Normalize leftover spacing.
+        return withoutParen.replace(/\s{2,}/g, ' ').replace(/\s+([,!.?])/g, '$1');
+    }
+
+    function getSpeechLocale(text) {
+        const hasIndicScript = /[\u0900-\u097F\u0980-\u09FF\u0A80-\u0AFF\u0B00-\u0B7F\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F]/.test(text);
+        if (hasIndicScript) {
+            return chatbotLanguageMap[currentLanguage] || 'en-US';
+        }
+
+        // Most chatbot replies are romanized Indian phrases, so an Indian English
+        // voice usually pronounces them more naturally than a native-script voice.
+        return currentLanguage === 'English' ? 'en-US' : 'en-IN';
+    }
+
+    function getChatbotVoice(locale) {
+        const voices = speechSynthesis.getVoices();
+        return voices.find(voice => voice.lang === locale)
+            || voices.find(voice => voice.lang && voice.lang.startsWith(locale.split('-')[0]))
+            || voices.find(voice => voice.default)
+            || voices[0]
+            || null;
+    }
+
+    function speakUtterance(text, locale, voice, allowFallback) {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = locale;
+        msg.rate = 0.88;
+        msg.pitch = 1.0;
+
+        if (voice) {
+            msg.voice = voice;
+            msg.lang = voice.lang || locale;
+        }
+
+        msg.onstart = function () {
+            setStatus('processing', 'Speaking...');
+        };
+
+        msg.onend = function () {
+            setStatus('idle', 'Ready');
+        };
+
+        msg.onerror = function (event) {
+            const errorName = event.error || '';
+            if (errorName === 'interrupted' || errorName === 'canceled') {
+                return;
+            }
+
+            if (allowFallback) {
+                setStatus('processing', 'Trying fallback voice...');
+                setTimeout(() => speakUtterance(text, 'en-US', null, false), 150);
+                return;
+            }
+
+            console.warn('Speech synthesis error:', errorName || event);
+            setStatus('idle', 'Speech output unavailable');
+        };
+
+        try {
+            speechSynthesis.cancel();
+            speechSynthesis.resume();
+            setTimeout(() => speechSynthesis.speak(msg), 75);
+        } catch (error) {
+            if (allowFallback) {
+                setTimeout(() => speakUtterance(text, 'en-US', null, false), 150);
+            } else {
+                console.warn('Speech synthesis failed:', error);
+                setStatus('idle', 'Speech output unavailable');
+            }
+        }
+    }
+
+    function setStatus(kind, text) {
+        const chip = document.getElementById('status-chip');
+        chip.className = 'status-chip ' + kind;
+        document.getElementById('status-text').textContent = text;
+    }
+</script>
+{% endblock %}

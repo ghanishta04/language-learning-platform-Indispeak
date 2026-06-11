@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Help - Indispeak{% endblock %}
+
+{% block extra_css %}
+<style>
+    .help-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .faq-item {
+        background: white;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .faq-question {
+        font-weight: bold;
+        color: #667eea;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 10px;
+        user-select: none;
+    }
+
+    .faq-answer {
+        display: none;
+        color: #666;
+        padding: 10px 10px 0 10px;
+        line-height: 1.6;
+    }
+
+    .faq-answer.open {
+        display: block;
+    }
+
+    .contact-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        margin-top: 30px;
+    }
+
+    .contact-info p {
+        margin: 10px 0;
+    }
+
+    .contact-info a {
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-container">
+    <h1>❓ Help & Support</h1>
+    <p>Find answers to common questions</p>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">What is Indispeak?</div>
+        <div class="faq-answer">
+            Indispeak is an interactive language learning platform designed to help you learn Indian languages including Hindi, Bengali, Marathi, Gujarati, and many more. Learn at your own pace with interactive lessons and quizzes.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">How do I complete a lesson?</div>
+        <div class="faq-answer">
+            To complete a lesson, navigate to your desired language course, select a lesson, read through the vocabulary and pronunciation guide, then click "Mark as Completed" at the bottom of the lesson page.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">Can I track my progress?</div>
+        <div class="faq-answer">
+            Yes! Your profile page shows your total lessons completed, quiz attempts, and average score. You can also see which lessons you've completed in the "My Courses" section.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">How do quizzes work?</div>
+        <div class="faq-answer">
+            Quizzes test your knowledge of languages. Answer multiple-choice questions, and your score will be saved to your profile. You can retake quizzes anytime to improve your score.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">How do I change my profile picture?</div>
+        <div class="faq-answer">
+            Go to your Profile page, click the "Edit Profile" tab, select a new profile picture from your device, and click "Save Changes".
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">How can I reset my password?</div>
+        <div class="faq-answer">
+            Go to your Profile page, click the "Change Password" tab, enter your current password and new password, then click "Update Password".
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">What languages can I learn?</div>
+        <div class="faq-answer">
+            Indispeak offers courses in: Marathi, Hindi, Malayalam, Gujarati, Assamese, Telugu, Odia, Kannada, Konkani, Rajasthani, Manipuri, and Bengali.
+        </div>
+    </div>
+
+    <div class="contact-info">
+        <h3>Still need help?</h3>
+        <p>Contact us at support@indispeak.com</p>
+        <p><a href="mailto:support@indispeak.com">📧 Send Email</a></p>
+    </div>
+</div>
+
+<script>
+function toggleFaq(element) {
+    const answer = element.nextElementSibling;
+    answer.classList.toggle('open');
+    element.style.color = answer.classList.contains('open') ? '#764ba2' : '#667eea';
+}
+</script>
+{% endblock %}

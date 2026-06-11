@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Indispeak{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+        margin-top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .profile-pic {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 5px solid #667eea;
+        margin: 0 auto 20px;
+        object-fit: cover;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .stat {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+    }
+
+    .stat h4 {
+        margin: 0;
+        color: #667eea;
+    }
+
+    .stat p {
+        margin: 5px 0 0 0;
+        color: #666;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: 0.3s;
+    }
+
+    .tab-btn.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: inherit;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .submit-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    @media (max-width: 768px) {
+        .profile-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>👤 My Profile</h1>
+
+<div class="profile-container">
+    <!-- Profile Card -->
+    <div class="profile-card">
+        <img
+            id="profilePicPreview"
+            src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}?v={{ user.updated_at.timestamp()|int if user.updated_at else 0 }}"
+            alt="Profile"
+            class="profile-pic"
+        >
+        <h2>{{ user.name }}</h2>
+        <p>@{{ user.username }}</p>
+        <p style="color: #666;">{{ user.email }}</p>
+        
+        <div class="stats-grid">
+            <div class="stat">
+                <h4>{{ completed_lessons }}</h4>
+                <p>Lessons Completed</p>
+            </div>
+            <div class="stat">
+                <h4>{{ total_attempts }}</h4>
+                <p>Quiz Attempts</p>
+            </div>
+            <div class="stat">
+                <h4>{{ "%.1f"|format(avg_score) }}%</h4>
+                <p>Average Score</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile -->
+    <div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('edit', this)">Edit Profile</button>
+            <button class="tab-btn" onclick="switchTab('password', this)">Change Password</button>
+        </div>
+
+        <!-- Edit Profile Tab -->
+        <div id="edit" class="tab-content active" style="background: white; padding: 20px; border-radius: 10px;">
+            <form id="editForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" value="{{ user.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea name="bio" placeholder="Tell us about yourself">{{ user.bio }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <input id="profilePicInput" type="file" name="profile_pic" accept=".png,.jpg,.jpeg,.gif,image/png,image/jpeg,image/gif">
+                </div>
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </form>
+        </div>
+
+        <!-- Change Password Tab -->
+        <div id="password" class="tab-content" style="background: white; padding: 20px; border-radius: 10px;">
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" name="old_password" required>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" name="confirm_password" required>
+                </div>
+                <button type="submit" class="submit-btn">Update Password</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+
+document.getElementById('editForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formEl = e.target;
+    const formData = new FormData(formEl);
+    const submitButton = formEl.querySelector('.submit-btn');
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+    }
+
+    try {
+        const response = await fetch('{{ url_for("profile.update_profile_api") }}', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            alert(data.message || 'Error updating profile');
+            return;
+        }
+
+        if (data.profile_pic) {
+            const preview = document.getElementById('profilePicPreview');
+            preview.src = `/static/uploads/${encodeURIComponent(data.profile_pic)}?v=${Date.now()}`;
+        }
+
+        alert('Profile updated successfully!');
+        formEl.querySelector('input[name="profile_pic"]').value = '';
+    } catch (error) {
+        alert('Error updating profile');
+        console.error(error);
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Save Changes';
+        }
+    }
+});
+
+document.getElementById('profilePicInput').addEventListener('change', function() {
+    const file = this.files && this.files[0];
+    if (!file) {
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        alert('Please choose an image file.');
+        this.value = '';
+        return;
+    }
+
+    const preview = document.getElementById('profilePicPreview');
+    preview.src = URL.createObjectURL(file);
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formEl = e.target;
+    const formData = new FormData(formEl);
+
+    try {
+        const response = await fetch('{{ url_for("profile.change_password_api") }}', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Password changed successfully!');
+            document.getElementById('passwordForm').reset();
+        } else {
+            alert(data.message || 'Error changing password');
+        }
+    } catch (error) {
+        alert('Error changing password');
+        console.error(error);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson_title }} - Indispeak{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lesson-container {
+        max-width: 800px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .lesson-container::before,
+    .lesson-container::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .lesson-container::before {
+        width: 140px;
+        height: 140px;
+        top: -22px;
+        right: 16px;
+        background: radial-gradient(circle, rgba(255, 208, 229, 0.5) 0%, rgba(255, 208, 229, 0) 72%);
+        animation: drift 8s ease-in-out infinite;
+    }
+
+    .lesson-container::after {
+        width: 120px;
+        height: 120px;
+        bottom: 40px;
+        left: -18px;
+        background: radial-gradient(circle, rgba(255, 243, 181, 0.52) 0%, rgba(255, 243, 181, 0) 72%);
+        animation: drift 9s ease-in-out infinite reverse;
+    }
+
+    .lesson-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        animation: slidePop 0.7s ease-out;
+        box-shadow: 0 18px 36px rgba(111, 103, 199, 0.18);
+    }
+
+    .lesson-header::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255,255,255,0.14), rgba(255,255,255,0));
+        transform: translateX(-100%);
+        animation: shimmer 4s ease-in-out infinite;
+    }
+
+    .lesson-content {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        position: relative;
+        z-index: 1;
+        animation: slidePop 0.8s ease-out 0.1s both;
+    }
+
+    .vocabulary {
+        margin-top: 20px;
+    }
+
+    .vocab-item {
+        background: #f9f9f9;
+        padding: 15px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        animation: slidePop 0.55s ease-out both;
+    }
+
+    .vocab-item:hover {
+        transform: translateX(6px) translateY(-2px);
+        box-shadow: 0 12px 22px rgba(102, 126, 234, 0.12);
+        background: #fcfcff;
+    }
+
+    .vocab-word {
+        font-weight: bold;
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .vocab-meaning {
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .vocab-example {
+        color: #999;
+        font-style: italic;
+        font-size: 12px;
+    }
+
+    .speak-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        animation: speakerPulse 1.8s ease-in-out infinite;
+    }
+
+    .speak-btn:hover {
+        background: #764ba2;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 18px rgba(118, 75, 162, 0.25);
+    }
+
+    .btn-nav {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin-right: 10px;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .btn-nav:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 18px rgba(102, 126, 234, 0.22);
+    }
+
+    .btn-complete {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #28a745;
+        color: white;
+        border: none;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+        font-size: 16px;
+    }
+
+    .btn-complete[disabled] {
+        background: #8fbf9a;
+        cursor: default;
+    }
+
+    .vocabulary .vocab-item:nth-child(1) { animation-delay: 0.06s; }
+    .vocabulary .vocab-item:nth-child(2) { animation-delay: 0.12s; }
+    .vocabulary .vocab-item:nth-child(3) { animation-delay: 0.18s; }
+    .vocabulary .vocab-item:nth-child(4) { animation-delay: 0.24s; }
+    .vocabulary .vocab-item:nth-child(5) { animation-delay: 0.30s; }
+    .vocabulary .vocab-item:nth-child(6) { animation-delay: 0.36s; }
+
+    @keyframes slidePop {
+        from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes shimmer {
+        0%, 100% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+    }
+
+    @keyframes speakerPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+    }
+
+    @keyframes drift {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(10px, -10px, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="lesson-container"
+    id="lessonData"
+    data-lesson-title="{{ lesson_title }}"
+    data-lesson-id="{{ lesson_id if lesson_id else '' }}"
+    data-lessons-url="{{ url_for('main.lessons', course_name=course_name) }}"
+>
+    <div class="lesson-header">
+        <h1>{{ lesson_title }}</h1>
+    </div>
+
+    <div class="lesson-content">
+        <h2>📚 Vocabulary</h2>
+        
+        <div class="vocabulary">
+            {% if vocabulary %}
+                {% for vocab in vocabulary %}
+                <div class="vocab-item">
+                    <div class="vocab-word">
+                        {{ vocab.word }}
+                        <button
+                            class="speak-btn"
+                            type="button"
+                            title="Hear pronunciation"
+                            data-word="{{ vocab.word }}"
+                            data-course="{{ course_name }}"
+                        >🔊</button>
+                    </div>
+                    <div class="vocab-meaning">{{ vocab.meaning }}</div>
+                    <div class="vocab-example">{{ vocab.example }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No vocabulary data available for this lesson.</p>
+            {% endif %}
+        </div>
+
+        <h2 style="margin-top: 30px;">📝 Practice</h2>
+        <p>Pronounce each word and try to remember their meanings. Click the speaker icon to hear the pronunciation!</p>
+
+        <hr style="margin: 30px 0;">
+
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('main.lessons', course_name=course_name) }}" class="btn-nav" onclick="autoCompleteLesson()">← Back to Lessons</a>
+            {% if lesson_num < 10 %}
+            <a href="{{ url_for('main.lesson_view', course_name=course_name, lesson_num=lesson_num + 1) }}" class="btn-nav" onclick="autoCompleteLesson()">Next Lesson →</a>
+            {% endif %}
+            {% if lesson_num == 10 %}
+            <button
+                id="markCompletedBtn"
+                type="button"
+                class="btn-complete"
+                onclick="markLessonCompleted()"
+                {% if lesson_completed %}disabled{% endif %}
+            >
+                {% if lesson_completed %}Completed{% else %}Mark as Completed{% endif %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.speak-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        speak(button.dataset.word, button.dataset.course);
+    });
+});
+
+const lessonData = document.getElementById('lessonData');
+const lessonTitle = lessonData.dataset.lessonTitle;
+const lessonId = lessonData.dataset.lessonId ? Number(lessonData.dataset.lessonId) : null;
+const lessonsUrl = lessonData.dataset.lessonsUrl;
+
+function markLessonCompleted() {
+    const button = document.getElementById('markCompletedBtn');
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Completing...';
+    }
+
+    fetch('/api/mark-lesson-completed', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            lesson_title: lessonTitle,
+            lesson_id: lessonId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (button) {
+                button.textContent = 'Completed';
+            }
+            window.location.href = lessonsUrl;
+            return;
+        }
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Mark as Completed';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Mark as Completed';
+        }
+    });
+}
+
+function autoCompleteLesson() {
+    // Send API request to mark lesson as completed
+    fetch('/api/mark-lesson-completed', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            lesson_title: lessonTitle,
+            lesson_id: lessonId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✓ Lesson marked as completed');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Auto-complete lesson when user leaves the page (closes tab, navigates away, etc.)
+window.addEventListener('beforeunload', function() {
+    autoCompleteLesson();
+});
+</script>
+{% endblock %}
